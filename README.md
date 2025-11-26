@@ -14,27 +14,11 @@
 
 ## 🚀 快速开始
 
-### 环境要求
-
-- Python 3.7+
-- 所需依赖库：
-```bash
-pip install pillow matplotlib pandas numpy
-```
-
-### 使用方法
-
 1. **准备图片**
-   ```bash
-   # 将需要分析的图片放入 input_photos 文件夹
-   mkdir input_photos
-   # 将你的图片文件复制到此文件夹
-   ```
+   将需要分析的图片放入 input_photos 文件夹
 
 2. **运行分析**
-   ```bash
-   python main.py
-   ```
+   运行`FocalLengthAnalyzer.exe`
 
 3. **处理缺失数据**
    - 如果图片缺少 EXIF 数据，程序会提示手动输入焦段和传感器尺寸
@@ -44,14 +28,14 @@ pip install pillow matplotlib pandas numpy
    - 统计报告会在终端显示
    - 详细数据和图表保存在 `outputs/年月日时分秒/` 目录下
 
-## 📁 文件结构
+## 📁 源代码结构
 
 ```
 .
 ├── main.py                      # 主程序文件
 ├── camera_crop_factors.json     # 相机裁切系数配置
 ├── missing_exif_data.json       # 手动输入的EXIF数据缓存
-├── input_photos/                # 输入图片文件夹（需手动创建）
+├── input_photos/                # 输入图片文件夹
 └── outputs/                     # 输出结果文件夹（自动生成）
     └── 20241201123045/          # 带时间戳的输出目录
         ├── focal_length_analysis.png    # 可视化图表
@@ -109,25 +93,13 @@ pip install pillow matplotlib pandas numpy
 
 ## 🛠️ 自定义配置
 
-### 修改焦段分组
-在 `_define_focal_groups()` 方法中调整焦段范围：
-
-```python
-def _define_focal_groups(self):
-    return {
-        '超广角(14-19mm)': (14, 19),
-        '广角 (24-28mm)': (24, 28),
-        # ... 添加或修改分组
-    }
-```
-
 ### 添加相机型号
 在 `camera_crop_factors.json` 中添加新的相机型号和裁切系数。
 
 ## 🤝 贡献
 
-欢迎提交 Issue 和 Pull Request！
-源代码：`@Pos2333` & deepseek
+- 欢迎提交 Issue 和 Pull Request！
+- 源代码：`@Pos2333` with Deepseek-R1
 
 ## 📄 许可证
 
@@ -137,8 +109,6 @@ def _define_focal_groups(self):
 
 - 建议分析至少50张以上图片以获得有意义的统计结果
 - 定期清理 `missing_exif_data.json` 文件以避免数据冗余
-- 可根据个人需求调整焦段分组范围
 
 ---
 **让数据指导你的摄影装备升级决策！** 📷✨
-```
