@@ -28,13 +28,15 @@
    - 统计报告会在终端显示
    - 详细数据和图表保存在 `outputs/年月日时分秒/` 目录下
 
-## 📁 源代码结构
+## 📁 项目结构
 
 ```
-.
+·
 ├── main.py                      # 主程序文件
 ├── camera_crop_factors.json     # 相机裁切系数配置
 ├── missing_exif_data.json       # 手动输入的EXIF数据缓存
+├── FocalLengthAnalyzer.ico      #图标文件
+├── FocalLengthAnalyzer_logo.png      #项目logo
 ├── input_photos/                # 输入图片文件夹
 └── outputs/                     # 输出结果文件夹（自动生成）
     └── 20241201123045/          # 带时间戳的输出目录
@@ -47,11 +49,12 @@
 ### camera_crop_factors.json
 ```json
 {
-  "sony ilce-7m3": 1.0,
-  "canon eos r6": 1.0,
-  "nikon z6": 1.0,
-  "fujifilm x-t4": 1.5,
-  "canon eos 90d": 1.6
+  "ilce-7m3": 1.0,
+  "canon eos r6 mark ii": 1.0,
+  "z 6_2": 1.0,
+
+  "ilce-6700": 1.5,
+  "canon eos r7": 1.6
 }
 ```
 
