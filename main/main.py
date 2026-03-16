@@ -17,6 +17,10 @@ class FocalLengthAnalyzer:
     os.makedirs(output_dir, exist_ok=True)
 
     def __init__(self, input_folder):
+        self.base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.crop_factors_path = os.path.join(self.base_dir, 'camera_crop_factors.json')
+        self.missing_exif_data_path = os.path.join(self.base_dir, 'missing_exif_data.json')
+        
         self.input_folder = input_folder
         self.crop_factors = self._load_crop_factors()
         self.focal_groups = self._define_focal_groups()
@@ -25,16 +29,23 @@ class FocalLengthAnalyzer:
     #从json配置文件加载常见相机的裁切系数
     def _load_crop_factors(self):
         try:
-            with open('camera_crop_factors.json', 'r', encoding='utf-8') as f:
+            with open(self.crop_factors_path, 'r', encoding='utf-8') as f:
                 return json.load(f)  
+        except FileNotFoundError:
+            print(f"提示：未找到裁切系数配置文件，将使用默认值。({os.path.basename(self.crop_factors_path)})")
+            return {}
         except Exception as e:
             print(f"加载裁切系数配置文件失败：{e}")
+            return {}
     
     #从json配置文件加载手动输入的exif数据
     def _load_missing_exif_data(self):
         try:
-            with open('missing_exif_data.json', 'r', encoding='utf-8') as f:
+            with open(self.missing_exif_data_path, 'r', encoding='utf-8') as f:
                 return json.load(f) 
+        except FileNotFoundError:
+            # 首次运行时文件不存在是正常的
+            return {}
         except Exception as e:
             print(f"加载缺失exif数据失败:{e}")
             return {}
@@ -42,7 +53,7 @@ class FocalLengthAnalyzer:
     #保存手动输入exif数据到json文件
     def save_missing_exif_data(self):
         try:
-            with open('missing_exif_data.json', 'w', encoding='utf-8') as f:
+            with open(self.missing_exif_data_path, 'w', encoding='utf-8') as f:
                 json.dump(self.missing_exif_data, f, ensure_ascii=False, indent=2)
             print("缺失EXIF数据已保存到 missing_exif_data.json")
         except Exception as e:
@@ -139,16 +150,17 @@ class FocalLengthAnalyzer:
             return data['equivalent_focal']
 
         print(f"\n图片 {os.path.basename(image_path)} 缺少EXIF数据")
-        print("请手动输入焦段信息:")
+        print("请手动输入焦段信息 (直接按回车跳过此图片):")
         
         while True:
             try:
                 focal_input = input("焦段 (mm): ").strip()
-                if focal_input:
-                    focal_length = float(focal_input)
-                    break
-                else:
-                    print("焦段不能为空，请重新输入")
+                if not focal_input:
+                    print(f"已跳过图片 {filename}")
+                    return None
+
+                focal_length = float(focal_input)
+                break
             except ValueError:
                 print("请输入有效的数字")
         
@@ -185,34 +197,46 @@ class FocalLengthAnalyzer:
         
         print("开始分析图片EXIF数据...")
         
-        for filename in os.listdir(self.input_folder):
-            file_ext = os.path.splitext(filename.lower())[1]
-            if file_ext in supported_formats:
-                image_path = os.path.join(self.input_folder, filename)
-                print(f"处理: {filename}")
-                
-                focal_length, camera_model = self.extract_exif_data(image_path)
-                
-                if focal_length is None:
-                    missing_exif_files.append(image_path)
+        for root, dirs, files in os.walk(self.input_folder):
+            for filename in files:
+                # 忽略 macOS 产生的临时/资源文件
+                if filename.startswith('._'):
                     continue
-                
-                equivalent_focal = self.convert_to_35mm_equivalent(focal_length, camera_model)
-                focal_group = self.group_focal_length(equivalent_focal)
-                
-                focal_data.append({
-                    'filename': filename,
-                    'original_focal': focal_length,
-                    'camera_model': camera_model,
-                    'equivalent_focal': equivalent_focal,
-                    'focal_group': focal_group
-                })
+
+                file_ext = os.path.splitext(filename.lower())[1]
+                if file_ext in supported_formats:
+                    image_path = os.path.join(root, filename)
+                    # 显示相对路径，更清晰
+                    rel_path = os.path.relpath(image_path, self.input_folder)
+                    print(f"处理: {rel_path}")
+                    
+                    focal_length, camera_model = self.extract_exif_data(image_path)
+                    
+                    if focal_length is None:
+                        missing_exif_files.append(image_path)
+                        continue
+                    
+                    equivalent_focal = self.convert_to_35mm_equivalent(focal_length, camera_model)
+                    focal_group = self.group_focal_length(equivalent_focal)
+                    
+                    focal_data.append({
+                        'filename': rel_path,  # 使用相对路径作为文件名标识
+                        'original_focal': focal_length,
+                        'camera_model': camera_model,
+                        'equivalent_focal': equivalent_focal,
+                        'focal_group': focal_group
+                    })
         
         # 处理缺失EXIF数据的文件
         if missing_exif_files:
             print(f"\n发现 {len(missing_exif_files)} 个文件缺少EXIF数据")
             for image_path in missing_exif_files:
                 equivalent_focal = self.handle_missing_exif(image_path)
+                
+                # 如果用户选择跳过（返回None）
+                if equivalent_focal is None:
+                    continue
+
                 focal_group = self.group_focal_length(equivalent_focal)
                 
                 focal_data.append({
@@ -366,7 +390,7 @@ class FocalLengthAnalyzer:
         print(f"可视化图表已保存到: focal_length_analysis.png")
 
 def main():
-    input_folder = 'input_photos'
+    input_folder = input("请输入图片文件夹路径：")
     
     # 创建分析器并执行分析
     analyzer = FocalLengthAnalyzer(input_folder)
